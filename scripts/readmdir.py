@@ -6,25 +6,26 @@ import sys
 import itertools as it
 
 TAG_TYPES = {
-    'splice':       (0x700, 0x400),
-    'create':       (0x7ff, 0x401),
-    'delete':       (0x7ff, 0x4ff),
-    'name':         (0x700, 0x000),
-    'reg':          (0x7ff, 0x001),
-    'dir':          (0x7ff, 0x002),
-    'superblock':   (0x7ff, 0x0ff),
-    'struct':       (0x700, 0x200),
-    'dirstruct':    (0x7ff, 0x200),
-    'ctzstruct':    (0x7ff, 0x202),
+    'splice': (0x700, 0x400),
+    'create': (0x7ff, 0x401),
+    'delete': (0x7ff, 0x4ff),
+    'name': (0x700, 0x000),
+    'reg': (0x7ff, 0x001),
+    'dir': (0x7ff, 0x002),
+    'superblock': (0x7ff, 0x0ff),
+    'struct': (0x700, 0x200),
+    'dirstruct': (0x7ff, 0x200),
+    'ctzstruct': (0x7ff, 0x202),
     'inlinestruct': (0x7ff, 0x201),
-    'userattr':     (0x700, 0x300),
-    'tail':         (0x700, 0x600),
-    'softtail':     (0x7ff, 0x600),
-    'hardtail':     (0x7ff, 0x601),
-    'gstate':       (0x700, 0x700),
-    'movestate':    (0x7ff, 0x7ff),
-    'crc':          (0x700, 0x500),
+    'userattr': (0x700, 0x300),
+    'tail': (0x700, 0x600),
+    'softtail': (0x7ff, 0x600),
+    'hardtail': (0x7ff, 0x601),
+    'gstate': (0x700, 0x700),
+    'movestate': (0x7ff, 0x7ff),
+    'crc': (0x700, 0x500),
 }
+
 
 class Tag:
     def __init__(self, *args):
@@ -109,9 +110,9 @@ class Tag:
 
     def chid(self, nid):
         ntag = Tag(self.type, nid, self.size)
-        if hasattr(self, 'off'):  ntag.off  = self.off
+        if hasattr(self, 'off'):  ntag.off = self.off
         if hasattr(self, 'data'): ntag.data = self.data
-        if hasattr(self, 'crc'):  ntag.crc  = self.crc
+        if hasattr(self, 'crc'):  ntag.crc = self.crc
         return ntag
 
     def typerepr(self):
@@ -120,12 +121,12 @@ class Tag:
 
         reverse_types = {v: k for k, v in TAG_TYPES.items()}
         for prefix in range(12):
-            mask = 0x7ff & ~((1 << prefix)-1)
+            mask = 0x7ff & ~((1 << prefix) - 1)
             if (mask, self.type & mask) in reverse_types:
                 type = reverse_types[mask, self.type & mask]
                 if prefix > 0:
                     return '%s %#0*x' % (
-                        type, prefix//4, self.type & ((1 << prefix)-1))
+                        type, prefix // 4, self.type & ((1 << prefix) - 1))
                 else:
                     return type
         else:
@@ -152,6 +153,7 @@ class Tag:
     def __index__(self):
         return self.tag
 
+
 class MetadataPair:
     def __init__(self, blocks):
         if len(blocks) > 1:
@@ -159,10 +161,10 @@ class MetadataPair:
             self.pair = sorted(self.pair, reverse=True)
 
             self.data = self.pair[0].data
-            self.rev  = self.pair[0].rev
+            self.rev = self.pair[0].rev
             self.tags = self.pair[0].tags
-            self.ids  = self.pair[0].ids
-            self.log  = self.pair[0].log
+            self.ids = self.pair[0].ids
+            self.log = self.pair[0].log
             self.all_ = self.pair[0].all_
             return
 
@@ -180,15 +182,15 @@ class MetadataPair:
         self.log = []
         self.all_ = []
         while len(block) - off >= 4:
-            ntag, = struct.unpack('>I', block[off:off+4])
+            ntag, = struct.unpack('>I', block[off:off + 4])
 
             tag = Tag(int(tag) ^ ntag)
             tag.off = off + 4
-            tag.data = block[off+4:off+tag.dsize]
+            tag.data = block[off + 4:off + tag.dsize]
             if tag.is_('crc'):
-                crc = binascii.crc32(block[off:off+4+4], crc)
+                crc = binascii.crc32(block[off:off + 4 + 4], crc)
             else:
-                crc = binascii.crc32(block[off:off+tag.dsize], crc)
+                crc = binascii.crc32(block[off:off + tag.dsize], crc)
             tag.crc = crc
             off += tag.dsize
 
@@ -287,15 +289,15 @@ class MetadataPair:
                 f.write("  %-23s  %-8s\n" % (
                     ' '.join('%02x' % c for c in tag.data[:8]),
                     ''.join(c if c >= ' ' and c <= '~' else '.'
-                        for c in map(chr, tag.data[:8]))))
+                            for c in map(chr, tag.data[:8]))))
             else:
                 f.write("\n")
                 for i in range(0, len(tag.data), 16):
                     f.write("  %08x: %-47s  %-16s\n" % (
-                        tag.off+i,
-                        ' '.join('%02x' % c for c in tag.data[i:i+16]),
+                        tag.off + i,
+                        ' '.join('%02x' % c for c in tag.data[i:i + 16]),
                         ''.join(c if c >= ' ' and c <= '~' else '.'
-                            for c in map(chr, tag.data[i:i+16]))))
+                                for c in map(chr, tag.data[i:i + 16]))))
 
     def dump_tags(self, f=sys.stdout, truncate=True):
         self._dump_tags(self.tags, f=f, truncate=truncate)
@@ -306,6 +308,7 @@ class MetadataPair:
     def dump_all(self, f=sys.stdout, truncate=True):
         self._dump_tags(self.all_, f=f, truncate=truncate)
 
+
 def main(args):
     blocks = []
     with open(args.disk, 'rb') as f:
@@ -314,22 +317,22 @@ def main(args):
                 continue
             f.seek(block * args.block_size)
             blocks.append(f.read(args.block_size)
-                .ljust(args.block_size, b'\xff'))
+                          .ljust(args.block_size, b'\xff'))
 
     # find most recent pair
     mdir = MetadataPair(blocks)
 
     try:
         mdir.tail = mdir[Tag('tail', 0, 0)]
-        if mdir.tail.size != 8 or mdir.tail.data == 8*b'\xff':
+        if mdir.tail.size != 8 or mdir.tail.data == 8 * b'\xff':
             mdir.tail = None
     except KeyError:
         mdir.tail = None
 
     print("mdir {%s} rev %d%s%s%s" % (
         ', '.join('%#x' % b
-            for b in [args.block1, args.block2]
-            if b is not None),
+                  for b in [args.block1, args.block2]
+                  if b is not None),
         mdir.rev,
         ' (was %s)' % ', '.join('%d' % m.rev for m in mdir.pair[1:])
         if len(mdir.pair) > 1 else '',
@@ -345,23 +348,25 @@ def main(args):
 
     return 0 if mdir else 1
 
+
 if __name__ == "__main__":
     import argparse
     import sys
+
     parser = argparse.ArgumentParser(
         description="Dump useful info about metadata pairs in littlefs.")
     parser.add_argument('disk',
-        help="File representing the block device.")
+                        help="File representing the block device.")
     parser.add_argument('block_size', type=lambda x: int(x, 0),
-        help="Size of a block in bytes.")
+                        help="Size of a block in bytes.")
     parser.add_argument('block1', type=lambda x: int(x, 0),
-        help="First block address for finding the metadata pair.")
+                        help="First block address for finding the metadata pair.")
     parser.add_argument('block2', nargs='?', type=lambda x: int(x, 0),
-        help="Second block address for finding the metadata pair.")
+                        help="Second block address for finding the metadata pair.")
     parser.add_argument('-l', '--log', action='store_true',
-        help="Show tags in log.")
+                        help="Show tags in log.")
     parser.add_argument('-a', '--all', action='store_true',
-        help="Show all tags in log, included tags in corrupted commits.")
+                        help="Show all tags in log, included tags in corrupted commits.")
     parser.add_argument('-T', '--no-truncate', action='store_true',
-        help="Don't truncate large amounts of data.")
+                        help="Don't truncate large amounts of data.")
     sys.exit(main(parser.parse_args()))

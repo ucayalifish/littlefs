@@ -97,6 +97,7 @@ EPILOGUE = """
 PASS = '\033[32m✓\033[0m'
 FAIL = '\033[31m✗\033[0m'
 
+
 class TestFailure(Exception):
     def __init__(self, case, returncode=None, stdout=None, assert_=None):
         self.case = case
@@ -104,9 +105,10 @@ class TestFailure(Exception):
         self.stdout = stdout
         self.assert_ = assert_
 
+
 class TestCase:
     def __init__(self, config, filter=filter,
-            suite=None, caseno=None, lineno=None, **_):
+                 suite=None, caseno=None, lineno=None, **_):
         self.config = config
         self.filter = filter
         self.suite = suite
@@ -150,14 +152,14 @@ class TestCase:
                 f.write('#define %s %s\n' % (k, v))
 
         f.write('void test_case%d(%s) {' % (self.caseno, ','.join(
-            '\n'+8*' '+'__attribute__((unused)) intmax_t %s' % k
+            '\n' + 8 * ' ' + '__attribute__((unused)) intmax_t %s' % k
             for k in sorted(self.perms[0].defines)
             if k not in self.defines)))
 
         f.write(PROLOGUE)
         f.write('\n')
-        f.write(4*' '+'// test case %d\n' % self.caseno)
-        f.write(4*' '+'#line %d "%s"\n' % (self.code_lineno, self.suite.path))
+        f.write(4 * ' ' + '// test case %d\n' % self.caseno)
+        f.write(4 * ' ' + '#line %d "%s"\n' % (self.code_lineno, self.suite.path))
 
         # test case goes here
         f.write(self.code)
@@ -176,8 +178,8 @@ class TestCase:
                 self.filter[0] != self.caseno):
             return False
         elif (self.filter is not None and
-                len(self.filter) >= 2 and
-                self.filter[1] != self.permno):
+              len(self.filter) >= 2 and
+              self.filter[1] != self.permno):
             return False
         elif args.get('no_internal', False) and self.in_ is not None:
             return False
@@ -185,7 +187,7 @@ class TestCase:
             if_ = self.if_
             while True:
                 for k, v in sorted(self.defines.items(),
-                        key=lambda x: len(x[0]), reverse=True):
+                                   key=lambda x: len(x[0]), reverse=True):
                     if k in if_:
                         if_ = if_.replace(k, '(%s)' % v)
                         break
@@ -193,17 +195,17 @@ class TestCase:
                     break
             if_ = (
                 re.sub('(\&\&|\?)', ' and ',
-                re.sub('(\|\||:)', ' or ',
-                re.sub('!(?!=)', ' not ', if_))))
+                       re.sub('(\|\||:)', ' or ',
+                              re.sub('!(?!=)', ' not ', if_))))
             return eval(if_)
         else:
             return True
 
     def test(self, exec=[], persist=False, cycles=None,
-            gdb=False, failure=None, disk=None, **args):
+             gdb=False, failure=None, disk=None, **args):
         # build command
         cmd = exec + ['./%s.test' % self.suite.path,
-            repr(self.caseno), repr(self.permno)]
+                      repr(self.caseno), repr(self.permno)]
 
         # persist disk or keep in RAM for speed?
         if persist:
@@ -265,14 +267,14 @@ class TestCase:
                 # intercept asserts
                 m = re.match(
                     '^{0}([^:]+):(\d+):(?:\d+:)?{0}{1}:{0}(.*)$'
-                    .format('(?:\033\[[\d;]*.| )*', 'assert'),
+                        .format('(?:\033\[[\d;]*.| )*', 'assert'),
                     line)
                 if m and assert_ is None:
                     try:
                         with open(m.group(1)) as f:
                             lineno = int(m.group(2))
-                            line = (next(it.islice(f, lineno-1, None))
-                                .strip('\n'))
+                            line = (next(it.islice(f, lineno - 1, None))
+                                    .strip('\n'))
                         assert_ = {
                             'path': m.group(1),
                             'line': line,
@@ -290,6 +292,7 @@ class TestCase:
         else:
             return PASS
 
+
 class ValgrindTestCase(TestCase):
     def __init__(self, config, **args):
         self.leaky = config.get('leaky', False)
@@ -302,15 +305,16 @@ class ValgrindTestCase(TestCase):
         verbose = args.get('verbose', False)
         uninit = (self.defines.get('LFS_ERASE_VALUE', None) == -1)
         exec = [
-            'valgrind',
-            '--leak-check=full',
-            ] + (['--undef-value-errors=no'] if uninit else []) + [
-            ] + (['--track-origins=yes'] if not uninit else []) + [
-            '--error-exitcode=4',
-            '--error-limit=no',
-            ] + (['--num-callers=1'] if not verbose else []) + [
-            '-q'] + exec
+                   'valgrind',
+                   '--leak-check=full',
+               ] + (['--undef-value-errors=no'] if uninit else []) + [
+               ] + (['--track-origins=yes'] if not uninit else []) + [
+                   '--error-exitcode=4',
+                   '--error-limit=no',
+               ] + (['--num-callers=1'] if not verbose else []) + [
+                   '-q'] + exec
         return super().test(exec=exec, **args)
+
 
 class ReentrantTestCase(TestCase):
     def __init__(self, config, **args):
@@ -331,7 +335,7 @@ class ReentrantTestCase(TestCase):
             # exact cycle we should drop into debugger?
             if gdb and failure and failure.cycleno == cycles:
                 return super().test(gdb=gdb, persist=persist, cycles=cycles,
-                    failure=failure, **args)
+                                    failure=failure, **args)
 
             # run tests, but kill the program after prog/erase has
             # been hit n cycles. We exit with a special return code if the
@@ -345,9 +349,10 @@ class ReentrantTestCase(TestCase):
                     nfailure.cycleno = cycles
                     raise
 
+
 class TestSuite:
     def __init__(self, path, classes=[TestCase], defines={},
-            filter=None, **args):
+                 filter=None, **args):
         self.name = os.path.basename(path)
         if self.name.endswith('.toml'):
             self.name = self.name[:-len('.toml')]
@@ -366,9 +371,9 @@ class TestSuite:
             code_linenos = []
             for i, line in enumerate(f):
                 if re.match(r'\[\[\s*case\s*\]\]', line):
-                    linenos.append(i+1)
+                    linenos.append(i + 1)
                 if re.match(r'code\s*=\s*(\'\'\'|""")', line):
-                    code_linenos.append(i+2)
+                    code_linenos.append(i + 2)
 
             code_linenos.reverse()
 
@@ -393,7 +398,7 @@ class TestSuite:
                 case['if'] = config['if']
             # initialize test case
             self.cases.append(TestCase(case, filter=filter,
-                suite=self, caseno=i+1, lineno=lineno, **args))
+                                       suite=self, caseno=i + 1, lineno=lineno, **args))
 
     def __str__(self):
         return self.name
@@ -445,7 +450,7 @@ class TestSuite:
             for i, (class_, defines) in enumerate(
                     it.product(self.classes, expanded)):
                 case.perms.append(case.permute(
-                    class_, defines, permno=i+1, **args))
+                    class_, defines, permno=i + 1, **args))
 
             # also track non-unique defines
             case.defines = {}
@@ -476,8 +481,8 @@ class TestSuite:
         tfs = {None: tf}
         for case in self.cases:
             if case.in_ not in tfs:
-                tfs[case.in_] = open(self.path+'.'+
-                    case.in_.replace('/', '.')+'.t', 'w')
+                tfs[case.in_] = open(self.path + '.' +
+                                     case.in_.replace('/', '.') + '.t', 'w')
                 tfs[case.in_].write('#line 1 "%s"\n' % case.in_)
                 with open(case.in_) as f:
                     for line in f:
@@ -492,23 +497,23 @@ class TestSuite:
         tf.write('const char *lfs_testbd_path;\n')
         tf.write('uint32_t lfs_testbd_cycles;\n')
         tf.write('int main(int argc, char **argv) {\n')
-        tf.write(4*' '+'int case_         = (argc > 1) ? atoi(argv[1]) : 0;\n')
-        tf.write(4*' '+'int perm          = (argc > 2) ? atoi(argv[2]) : 0;\n')
-        tf.write(4*' '+'lfs_testbd_path   = (argc > 3) ? argv[3] : NULL;\n')
-        tf.write(4*' '+'lfs_testbd_cycles = (argc > 4) ? atoi(argv[4]) : 0;\n')
+        tf.write(4 * ' ' + 'int case_         = (argc > 1) ? atoi(argv[1]) : 0;\n')
+        tf.write(4 * ' ' + 'int perm          = (argc > 2) ? atoi(argv[2]) : 0;\n')
+        tf.write(4 * ' ' + 'lfs_testbd_path   = (argc > 3) ? argv[3] : NULL;\n')
+        tf.write(4 * ' ' + 'lfs_testbd_cycles = (argc > 4) ? atoi(argv[4]) : 0;\n')
         for perm in self.perms:
             # test declaration
-            tf.write(4*' '+'extern void test_case%d(%s);\n' % (
+            tf.write(4 * ' ' + 'extern void test_case%d(%s);\n' % (
                 perm.caseno, ', '.join(
                     'intmax_t %s' % k for k in sorted(perm.defines)
                     if k not in perm.case.defines)))
             # test call
-            tf.write(4*' '+
-                'if (argc < 3 || (case_ == %d && perm == %d)) {'
-                ' test_case%d(%s); '
-                '}\n' % (perm.caseno, perm.permno, perm.caseno, ', '.join(
-                    str(v) for k, v in sorted(perm.defines.items())
-                    if k not in perm.case.defines)))
+            tf.write(4 * ' ' +
+                     'if (argc < 3 || (case_ == %d && perm == %d)) {'
+                     ' test_case%d(%s); '
+                     '}\n' % (perm.caseno, perm.permno, perm.caseno, ', '.join(
+                str(v) for k, v in sorted(perm.defines.items())
+                if k not in perm.case.defines)))
         tf.write('}\n')
 
         for tf in tfs.values():
@@ -516,25 +521,25 @@ class TestSuite:
 
         # write makefiles
         with open(self.path + '.mk', 'w') as mk:
-            mk.write(RULES.replace(4*' ', '\t'))
+            mk.write(RULES.replace(4 * ' ', '\t'))
             mk.write('\n')
 
             # add truely global defines globally
             for k, v in sorted(self.defines.items()):
                 mk.write('%s: override CFLAGS += -D%s=%r\n' % (
-                    self.path+'.test', k, v))
+                    self.path + '.test', k, v))
 
             for path in tfs:
                 if path is None:
                     mk.write('%s: %s | %s\n' % (
-                        self.path+'.test.c',
+                        self.path + '.test.c',
                         self.path,
-                        self.path+'.test.c.t'))
+                        self.path + '.test.c.t'))
                 else:
                     mk.write('%s: %s %s | %s\n' % (
-                        self.path+'.'+path.replace('/', '.'),
+                        self.path + '.' + path.replace('/', '.'),
                         self.path, path,
-                        self.path+'.'+path.replace('/', '.')+'.t'))
+                        self.path + '.' + path.replace('/', '.') + '.t'))
                 mk.write('\t./scripts/explode_asserts.py $| -o $@\n')
 
         self.makefile = self.path + '.mk'
@@ -569,6 +574,7 @@ class TestSuite:
 
         if not args.get('verbose', True):
             sys.stdout.write('\n')
+
 
 def main(**args):
     # figure out explicit defines
@@ -625,8 +631,8 @@ def main(**args):
         targets.append(target)
 
     cmd = (['make', '-f', 'Makefile'] +
-        list(it.chain.from_iterable(['-f', m] for m in makefiles)) +
-        [target for target in targets])
+           list(it.chain.from_iterable(['-f', m] for m in makefiles)) +
+           [target for target in targets])
     mpty, spty = pty.openpty()
     if args.get('verbose', False):
         print(' '.join(shlex.quote(c) for c in cmd))
@@ -647,13 +653,13 @@ def main(**args):
         # intercept warnings
         m = re.match(
             '^{0}([^:]+):(\d+):(?:\d+:)?{0}{1}:{0}(.*)$'
-            .format('(?:\033\[[\d;]*.| )*', 'warning'),
+                .format('(?:\033\[[\d;]*.| )*', 'warning'),
             line)
         if m and not args.get('verbose', False):
             try:
                 with open(m.group(1)) as f:
                     lineno = int(m.group(2))
-                    line = next(it.islice(f, lineno-1, None)).strip('\n')
+                    line = next(it.islice(f, lineno - 1, None)).strip('\n')
                 sys.stdout.write(
                     "\033[01m{path}:{lineno}:\033[01;35mwarning:\033[m "
                     "{message}\n{line}\n\n".format(
@@ -739,40 +745,42 @@ def main(**args):
     print('tests failed: %d' % failed)
     return 1 if failed > 0 else 0
 
+
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser(
         description="Run parameterized tests in various configurations.")
     parser.add_argument('testpaths', nargs='*', default=[TESTDIR],
-        help="Description of test(s) to run. By default, this is all tests \
+                        help="Description of test(s) to run. By default, this is all tests \
             found in the \"{0}\" directory. Here, you can specify a different \
             directory of tests, a specific file, a suite by name, and even a \
             specific test case by adding brackets. For example \
             \"test_dirs[0]\" or \"{0}/test_dirs.toml[0]\".".format(TESTDIR))
     parser.add_argument('-D', action='append', default=[],
-        help="Overriding parameter definitions.")
+                        help="Overriding parameter definitions.")
     parser.add_argument('-v', '--verbose', action='store_true',
-        help="Output everything that is happening.")
+                        help="Output everything that is happening.")
     parser.add_argument('-k', '--keep-going', action='store_true',
-        help="Run all tests instead of stopping on first error. Useful for CI.")
+                        help="Run all tests instead of stopping on first error. Useful for CI.")
     parser.add_argument('-p', '--persist', choices=['erase', 'noerase'],
-        nargs='?', const='erase',
-        help="Store disk image in a file.")
+                        nargs='?', const='erase',
+                        help="Store disk image in a file.")
     parser.add_argument('-b', '--build', action='store_true',
-        help="Only build the tests, do not execute.")
+                        help="Only build the tests, do not execute.")
     parser.add_argument('-g', '--gdb', choices=['init', 'main', 'assert'],
-        nargs='?', const='assert',
-        help="Drop into gdb on test failure.")
+                        nargs='?', const='assert',
+                        help="Drop into gdb on test failure.")
     parser.add_argument('--no-internal', action='store_true',
-        help="Don't run tests that require internal knowledge.")
+                        help="Don't run tests that require internal knowledge.")
     parser.add_argument('-n', '--normal', action='store_true',
-        help="Run tests normally.")
+                        help="Run tests normally.")
     parser.add_argument('-r', '--reentrant', action='store_true',
-        help="Run reentrant tests with simulated power-loss.")
+                        help="Run reentrant tests with simulated power-loss.")
     parser.add_argument('-V', '--valgrind', action='store_true',
-        help="Run non-leaky tests under valgrind to check for memory leaks.")
+                        help="Run non-leaky tests under valgrind to check for memory leaks.")
     parser.add_argument('-e', '--exec', default=[], type=lambda e: e.split(' '),
-        help="Run tests with another executable prefixed on the command line.")
+                        help="Run tests with another executable prefixed on the command line.")
     parser.add_argument('-d', '--disk',
-        help="Specify a file to use for persistent/reentrant tests.")
+                        help="Specify a file to use for persistent/reentrant tests.")
     sys.exit(main(**vars(parser.parse_args())))

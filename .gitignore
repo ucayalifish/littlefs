@@ -10,3 +10,5 @@ test.c
 tests/*.toml.*
 scripts/__pycache__
 .gdb_history
+/cmake-build-debug-apple-clang/
+/cmake-build-debug-vagrantlfs/
