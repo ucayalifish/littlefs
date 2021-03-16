@@ -10,6 +10,10 @@
 #include <unistd.h>
 #include <errno.h>
 
+#if (defined _WIN32 || defined __WIN32__) && ! defined __CYGWIN__
+extern int fsync (int fd);
+#endif
+
 int lfs_filebd_createcfg(const struct lfs_config *cfg, const char *path,
         const struct lfs_filebd_config *bdcfg) {
     LFS_FILEBD_TRACE("lfs_filebd_createcfg(%p {.context=%p, "

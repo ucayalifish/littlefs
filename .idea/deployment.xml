@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
+    <serverData>
+      <paths name="bionic01-32 (72b0b7ab-a68c-4a08-ad34-c0fadfa8a707)">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/tmp/tmp.rPDkhxaYVh" local="$PROJECT_DIR$" />
+          </mappings>
+          <excludedPaths>
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-bionic01-32" />
+            <excludedPath local="true" path="$PROJECT_DIR$/cmake-build-debug-mingw32" />
+          </excludedPaths>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>

@@ -4,11 +4,20 @@ project(lfs C ASM)
 
 set(CMAKE_C_STANDARD 99)
 
-add_library(lfs lfs.c lfs_util.c bd/lfs_filebd.c bd/lfs_rambd.c bd/lfs_testbd.c)
+set(LFS_SOURCES lfs.c lfs_util.c bd/lfs_filebd.c bd/lfs_rambd.c bd/lfs_testbd.c)
 
-target_include_directories(lfs PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+if ("${USE_MINGW}" STREQUAL "1")
+    message(STATUS "Using MinGW toolset")
+    set(LFS_SOURCES ${LFS_SOURCES} bd/fsync.c)
+endif ()
 
-target_compile_options(lfs PUBLIC -Wall -pedantic -Wextra -Wshadow -Wjump-misses-init -Wundef -Wno-unknown-warning-option)
+add_library(lfs ${LFS_SOURCES})
+
+target_include_directories(lfs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+
+target_compile_options(lfs PUBLIC -Wall -Wextra -Wshadow -Wjump-misses-init -Wundef -Wno-unknown-warning-option)
+
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
     message(STATUS "Maximum optimization for speed")
@@ -24,3 +33,7 @@ else ()
     target_compile_options(lfs PUBLIC -Og -g)
     target_compile_definitions(lfs PUBLIC LFS_YES_TRACE)
 endif ()
+
+#[[
+add_subdirectory(tests)
+]]
