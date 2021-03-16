@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+#set(CMAKE_VERBOSE_MAKEFILE ON)
+
 project(lfs C ASM)
 
 set(CMAKE_C_STANDARD 99)
@@ -15,7 +17,7 @@ add_library(lfs ${LFS_SOURCES})
 
 target_include_directories(lfs PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_compile_options(lfs PUBLIC -Wall -Wextra -Wshadow -Wjump-misses-init -Wundef -Wno-unknown-warning-option)
+target_compile_options(lfs PUBLIC -Wall -Wextra -Wshadow -Wjump-misses-init -Wundef -Wno-unknown-warning-option -Wno-unknown-pragmas)
 
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
@@ -31,8 +33,12 @@ elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
 else ()
     message(STATUS "Minimal optimization, debug info included")
     target_compile_options(lfs PUBLIC -Og -g)
-    target_compile_definitions(lfs PUBLIC LFS_YES_TRACE)
+#    target_compile_definitions(lfs PUBLIC ${COMPILE_DEFINITIONS} LFS_YES_TRACE)
 endif ()
+
+target_compile_definitions(lfs PUBLIC ${COMPILE_DEFINITIONS}  LFS_NO_MALLOC)
+
+add_subdirectory(smtc_tests)
 
 #[[
 add_subdirectory(tests)
